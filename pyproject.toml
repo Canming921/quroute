@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quroute"
+version = "0.4.0"
+description = "AI-driven qubit mapping & routing for restricted quantum topologies (Qiskit plugin)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Canming921" }]
+keywords = ["quantum", "qiskit", "transpiler", "routing", "qubit-mapping", "reinforcement-learning", "gnn"]
+dependencies = [
+    "qiskit>=2.0,<3.0",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# Stage B (RL + GNN). Kept optional so the baseline installs with zero ML deps.
+learn = [
+    "torch>=2.2",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "qiskit-aer>=0.15",
+    "matplotlib>=3.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/Canming921/quroute"
+Repository = "https://github.com/Canming921/quroute"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E741"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
