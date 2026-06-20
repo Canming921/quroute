@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.pt
+*.ckpt
+runs/
+wandb/
+.DS_Store
+benchmark_results.csv
+*.png
+gnn_policy.pt
