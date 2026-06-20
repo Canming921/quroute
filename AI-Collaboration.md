@@ -1,85 +1,64 @@
-# AI Collaboration Log
+# AI 协同日志(AI-Collaboration.md)
 
-> Required by the course rubric (10%). This file documents how we used a large language
-> model as a **collaborating researcher** — including prompts, dead ends, corrections,
-> and design decisions — rather than as a blind code generator.
+> 本文件为课程考核要求(占 10%),用于记录我们如何把大语言模型当作"协作研究员"来使用
+> ——包括关键提问、走过的弯路、纠错过程与设计决策,而不是把它当成"盲目代写工具"。
 
-Format per entry: date · goal · what we asked / iterated · what we kept vs rejected · why.
-
----
-
-## 2026-06-18 · Project framing & method choice
-- **Goal:** decide RL vs GNN vs hybrid for the routing agent.
-- **Iteration:** asked the model to map the rubric weights to a strategy; pushed back on
-  "just beat SABRE" framing. Model argued performance is *not* the dominant rubric axis
-  (30% physics/architecture understanding, 25% engineering, 20% commit history).
-- **Decision:** RL (PPO) as the decision backbone + GNN as the topology-state encoder,
-  delivered in two stages (simple-feature MLP first, GNN second). Rationale: routing is a
-  sequential decision problem (needs RL), and the rubric explicitly rewards "learning the
-  constraint features of the topology" (needs a GNN over the coupling graph).
-- **Rejected:** pure GNN (not a sequential decision-maker; caps at imitation of SABRE).
-- **Kept as Plan B:** imitation learning if PPO training is unstable near the deadline.
-
-## 2026-06-18 · Scaffold + CI
-- **Goal:** stand up a real, testable Qiskit plugin skeleton (not a placeholder).
-- **Iteration:** verified the live Qiskit 2.4 API in a sandbox (`CouplingMap.distance`,
-  `shortest_undirected_path`, `dag.front_layer`, `dag.two_qubit_ops`) before writing code,
-  rather than trusting the model's memory of an older API.
-- **Decision:** ship a working `GreedyShortestPathRouter` baseline now so the pipeline runs
-  end-to-end from commit #1; keep `LearnedRouter` as a documented stub.
+每条记录格式:日期 · 目标 · 提问/迭代过程 · 采纳了什么 / 否定了什么 · 原因。
 
 ---
 
-### TODO log template (fill as you go)
-- [ ] Stage A RL env: state/action/reward design — prompts & results
-- [ ] Reward shaping experiments — what worked / what diverged
-- [ ] GNN encoder choice (GAT vs GINEConv) — comparison
-- [ ] SABRE benchmark methodology — fairness checks the model flagged
+## 2026-06-18 · 项目定位与方法选型
+- **目标**:为路由智能体在 RL / GNN / 两者结合之间做选择。
+- **迭代**:让模型把评分表的权重映射成策略,并对"一味追求打败 SABRE"的思路提出质疑。
+  模型分析后指出:性能并非评分主轴(30% 物理与架构理解、25% 工程规范、20% commit 历史)。
+- **决策**:用 RL(PPO)作为决策主干 + GNN 作为拓扑状态编码器,分两阶段交付
+  (先简单特征 MLP,再上 GNN)。理由:路由本质是序贯决策问题(需要 RL),
+  而评分表明确奖励"学习目标拓扑的约束特征"(需要在耦合图上做 GNN)。
+- **否定方案**:纯 GNN(本身不是序贯决策器,上限只能模仿 SABRE)。
+- **保留为 Plan B**:若临近 ddl 时 PPO 训练不稳,改用模仿学习(模仿 SABRE)。
 
-## 2026-06-18 (cont.) · Stage A RL environment
-- **Goal:** turn the front layer into a gym-style MDP and get a learning signal.
-- **Iteration:**
-  - Designed reward as swap-cost + potential-based distance shaping so that maximizing
-    return provably equals minimizing SWAPs (checked the shaping theorem, not just vibes).
-  - First training run: deterministic greedy *evaluation* livelocked in a 2-cycle
-    (swap an edge, then immediately undo it). Diagnosed and fixed by forbidding the
-    immediately-previous action at inference + random tie-breaking in the scripted policy.
-  - Verified the env runs with numpy+qiskit only (kept torch out of the import path) so CI
-    stays light; torch tests auto-skip when torch is absent.
-- **Result:** trained MLP policy ~8.3 mean swaps vs ~19 random on a 3x3 grid (30 circuits),
-  and front-layer greedy (9 swaps) already beats topological greedy (10) on the demo,
-  closing on SABRE (8). Honest baseline curve to report.
-- **Decision:** keep MLP as Stage-A baseline; Stage B swaps only the *encoder* for a GNN.
+## 2026-06-18 · 项目骨架 + CI
+- **目标**:搭起一个真正能跑、能测试的 Qiskit 插件骨架,而不是空壳占位。
+- **迭代**:在沙盒里先实测当前 Qiskit 2.4 的 API(`CouplingMap.distance`、
+  `shortest_undirected_path`、`dag.front_layer`、`dag.two_qubit_ops`)再写代码,
+  而不是相信模型对旧版 API 的记忆。
+- **决策**:先交付一个能跑的 `GreedyShortestPathRouter` 基线,让整条流水线从第一个
+  commit 起就端到端可用;`LearnedRouter` 先留成带设计说明的占位。
 
-## 2026-06-18 (cont.) · Benchmark framework
-- **Goal:** a fair, reproducible comparison vs Qiskit SABRE with real numbers + figures.
-- **Iteration:**
-  - Caught that `qiskit.circuit.library.QFT` is deprecated (removal in Qiskit 3.0);
-    switched to `qiskit.synthesis.synth_qft_full`.
-  - Fairness decisions made explicit: (1) pre-decompose all benchmark circuits to <=2q
-    with NO swap gates, so any output SWAP is pure routing overhead; (2) compute metrics by
-    flattening SWAP->CX and measuring on one common basis; (3) give SABRE best-of-5 seeds
-    and a trivial layout, matching our routers' trivial layout (routing-only comparison).
-  - Kept the runner numpy+qiskit only; plotting (matplotlib) is lazily imported so CI core
-    stays light and the plot test auto-skips when matplotlib is absent.
-- **Result:** SABRE leads on all families; front-layer greedy roughly halves the
-  topological-greedy overhead on QFT (177->89 added CX at n=9). The SABRE gap is now
-  quantified and becomes the explicit success criterion for Stage B.
+## 2026-06-18 · Stage A 强化学习环境
+- **目标**:把 front layer 封装成 gym 式 MDP,跑出学习信号。
+- **迭代**:
+  - 奖励设计为 SWAP 成本 + 势函数式距离整形,使"最大化回报"可证等价于"最小化 SWAP 数"
+    (查了势函数整形定理,而不是凭感觉拍脑袋)。
+  - 第一次训练:确定性贪心在评估时陷入"换一步又换回去"的二循环。诊断后通过
+    "禁止立即撤销上一步" + 随机打破平局修复。
+  - 验证环境只依赖 numpy + qiskit(把 torch 挡在导入路径外),让 CI 保持轻量;
+    没有 torch 时相关测试自动跳过。
+- **结果**:训练好的 MLP 策略平均约 8.3 个 SWAP,随机策略约 19 个(3×3 网格,30 个电路)。
+- **决策**:MLP 作为 Stage A 基线保留;Stage B 只替换其中的编码器为 GNN。
 
-## 2026-06-18 (cont.) · Stage B GNN policy
-- **Goal:** replace the MLP encoder with a GNN so the policy learns topology constraints
-  and transfers across devices.
-- **Iteration / dead ends:**
-  - First GNN beat random but lagged the greedy heuristic; root cause: it lacked the
-    per-edge distance-reduction signal the heuristic uses. Added it as an *edge feature*
-    (physically: "how much does this SWAP help the front layer now") -> GNN then matched
-    greedy on grids.
-  - Deterministic greedy inference livelocked on a line (unseen, low connectivity). A
-    last-action guard wasn't enough on large graphs (too many candidate edges). Replaced
-    with a *stall detector*: if no gate executes for `2N` steps, force the max-distance-
-    reduction SWAP -> strictly decreases front-layer distance -> provable termination.
-  - Verified the headline claim empirically: a net trained only on small topologies routes
-    validly on 4x4 / ring-8 / line-8 it never saw (the MLP literally cannot, by input shape).
-- **Decision / honesty:** report that the GNN matches the heuristic + generalizes, but does
-  NOT beat SABRE yet; list concrete next steps rather than over-claim. The rubric rewards
-  understanding + honest engineering over a leaderboard win.
+## 2026-06-18 · Benchmark 框架
+- **目标**:对 Qiskit SABRE 做一次公平、可复现、有真实数据与图表的对比。
+- **迭代**:
+  - 发现 `qiskit.circuit.library.QFT` 已被弃用(Qiskit 3.0 将移除),改用 `synth_qft_full`。
+  - 明确公平性口径:(1) 所有基准电路预先分解为 ≤2 比特门且不含 SWAP,
+    使输出里的任何 SWAP 都纯属路由开销;(2) 指标统一把 SWAP 展开成 CX 后,再在同一 basis 上测量;
+    (3) SABRE 给 best-of-5 且用 trivial 初始映射,与本项目一致(纯路由对比)。
+  - runner 只依赖 numpy + qiskit,绘图(matplotlib)懒加载,CI 核心保持轻量。
+- **结果**:SABRE 全面领先;front-layer 贪心把朴素拓扑贪心的开销大致砍半(QFT n=9:177→89)。
+  对 SABRE 的差距被量化,成为 Stage B 的明确成功标准。
+
+## 2026-06-18 · Stage B GNN 策略
+- **目标**:把 MLP 编码器换成 GNN,让策略学习拓扑约束并能跨设备迁移。
+- **迭代 / 走的弯路**:
+  - 第一版 GNN 能赢随机但不如手工贪心;根因是它没用到贪心所依赖的"每条边距离削减"信号。
+    把这个量作为**边特征**加进去后(物理含义:"这次 SWAP 当前对 front layer 有多大帮助"),
+    GNN 在网格拓扑上追平了贪心。
+  - 确定性贪心评估在没训练过的线形拓扑上陷入循环;只"禁止上一步"在大图上不够用
+    (候选边太多)。改成**停滞检测**:连续 2N 步没有门被执行,就强制走"最大距离削减"那一步,
+    保证 front-layer 总距离严格下降,从而可证收敛。
+  - 实证核心论点:只在小拓扑上训练的网络,能在没见过的 4×4 / ring-8 / line-8 上合法路由
+    (MLP 因输入维度与设备绑定,根本做不到)。
+- **决策 / 诚实表述**:如实写明 GNN 追平了启发式并能泛化,但**尚未超过 SABRE**;
+  并列出明确的后续路线(PPO/GAE、look-ahead 奖励、GAT/GINEConv、可学习初始布局),
+  不夸大成绩。
