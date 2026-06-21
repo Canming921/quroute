@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "quroute"
 version = "0.4.0"
-description = "AI-driven qubit mapping & routing for restricted quantum topologies (Qiskit plugin)"
+description = "面向受限拓扑量子芯片的 AI 驱动比特映射与路由(Qiskit 插件)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
