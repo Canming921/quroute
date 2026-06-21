@@ -1,7 +1,7 @@
-"""Run the benchmark suite vs SABRE and write CSV + figures.
+"""运行 benchmark 套件对比 SABRE,并输出 CSV + 图。
 
-Run:  python examples/run_benchmark.py
-(figures need matplotlib: pip install -e ".[dev]")
+运行:  python examples/run_benchmark.py
+(出图需要 matplotlib:pip install -e ".[dev]")
 """
 from quroute import (
     GreedyDistancePolicy,
@@ -42,14 +42,14 @@ def main():
             print(f"{a['circuit']:10}{a['router']:22}{a['added_cx']:>9.1f}{a['depth_2q']:>9.1f}")
 
     to_csv(all_rows, "benchmark_results.csv")
-    print("\nwrote benchmark_results.csv")
+    print("\n已写出 benchmark_results.csv")
     try:
         from quroute.benchmark.plots import plot_added_cx_by_circuit, plot_scaling
         plot_added_cx_by_circuit(all_rows, "benchmark_added_cx_n9.png", n_qubits=9)
         plot_scaling(all_rows, "benchmark_scaling_random.png", circuit="random")
-        print("wrote figures: benchmark_added_cx_n9.png, benchmark_scaling_random.png")
+        print("已写出图:benchmark_added_cx_n9.png, benchmark_scaling_random.png")
     except ImportError:
-        print("(install matplotlib for figures)")
+        print("(安装 matplotlib 才能出图)")
 
 
 if __name__ == "__main__":

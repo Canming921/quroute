@@ -1,7 +1,7 @@
-"""Train the Stage-A REINFORCE policy and compare it to a random policy.
+"""训练 Stage A 的 REINFORCE 策略,并与随机策略对比。
 
-Requires the learn extra:  pip install -e ".[learn]"
-Run:  python examples/train_reinforce.py
+需要 learn 可选依赖:  pip install -e ".[learn]"
+运行:  python examples/train_reinforce.py
 """
 import numpy as np
 import torch
@@ -25,7 +25,7 @@ def main():
         ts.append(run_episode(RoutingEnv(cm, circuit=c, max_steps=4000), trained).n_swaps)
         rs.append(run_episode(RoutingEnv(cm, circuit=c, max_steps=4000), rand).n_swaps)
     print(
-        f"\nmean swaps over 30 fresh circuits:  "
+        f"\n30 个新电路上的平均 SWAP 数:  "
         f"trained={np.mean(ts):.2f}  random={np.mean(rs):.2f}"
     )
 

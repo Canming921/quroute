@@ -1,4 +1,4 @@
-"""End-to-end demo: three routers vs Qiskit SABRE.  Run: python examples/quickstart.py"""
+"""端到端演示:三种路由器 vs Qiskit SABRE。运行:python examples/quickstart.py"""
 from qiskit import QuantumCircuit
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import SabreSwap
@@ -43,7 +43,7 @@ def main():
         key=lambda o: o.count_ops().get("swap", 0),
     )
     print(f"{'SABRE (best of 8 seeds)':32}{best.count_ops().get('swap', 0):>7}{best.depth():>7}")
-    print("\nTrain a learned policy:  python examples/train_reinforce.py")
+    print("\n训练一个学习型策略:  python examples/train_reinforce.py")
 
 
 if __name__ == "__main__":
