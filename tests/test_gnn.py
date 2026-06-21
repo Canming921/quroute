@@ -1,4 +1,4 @@
-"""Stage-B GNN tests. Auto-skipped when torch is absent (e.g. CI core)."""
+"""Stage B GNN 测试。没有 torch 时(如 CI 核心)自动跳过。"""
 import pytest
 
 torch = pytest.importorskip("torch")  # noqa: F841
@@ -28,12 +28,12 @@ def test_gnn_trains_and_routes():
 
 
 def test_gnn_generalizes_to_unseen_topology():
-    """A net trained ONLY on a grid must still route validly on a ring/line it
-    never saw — the size-agnostic property the MLP cannot have."""
+    """只在网格上训练过的网络,也必须能在它从未见过的 环/线 拓扑上合法路由
+    —— 这是 MLP 不具备的“尺寸无关”性质。"""
     net = train_gnn([grid_topology(2, 3)], n_two_qubit=5, iterations=8, log_every=0, seed=0)
     policy = GNNMaskedPolicy(net, greedy=True)
     for cm in (ring_topology(7), linear_topology(8)):
         res = run_episode(
             RoutingEnv(cm, circuit=random_circuit(cm.size(), 6, seed=2), max_steps=8000), policy
         )
-        assert _hw_valid(res.circuit, cm)  # valid + terminated (no truncation)
+        assert _hw_valid(res.circuit, cm)  # 合法 + 正常结束(没有被截断)

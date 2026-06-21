@@ -1,4 +1,4 @@
-"""Stage-A training smoke test. Skipped automatically when torch is absent (e.g. CI)."""
+"""Stage A 训练的冒烟测试。没有 torch 时(如 CI)自动跳过。"""
 import pytest
 
 torch = pytest.importorskip("torch")  # noqa: F841

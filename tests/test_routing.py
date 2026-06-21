@@ -11,7 +11,7 @@ from quroute import (
 
 
 def _all_two_qubit_gates_are_legal(circuit, coupling_map):
-    """Every 2-qubit gate must sit on an edge of the device."""
+    """每个两比特门都必须落在设备的一条边上。"""
     edges = {tuple(e) for e in coupling_map.get_edges()}
     for inst in circuit.data:
         qs = [circuit.find_bit(q).index for q in inst.qubits]
@@ -24,7 +24,7 @@ def _all_two_qubit_gates_are_legal(circuit, coupling_map):
 def test_greedy_produces_hardware_valid_circuit():
     qc = QuantumCircuit(4)
     qc.h(0)
-    qc.cx(0, 3)   # not adjacent on a line -> must insert SWAPs
+    qc.cx(0, 3)   # 在一维链上不相邻 -> 必须插入 SWAP
     qc.cx(1, 3)
     qc.cx(0, 2)
     cm = linear_topology(4)

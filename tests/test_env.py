@@ -69,7 +69,7 @@ def test_no_routing_needed_terminates_immediately():
     qc.cx(1, 2)
     env = RoutingEnv(cm, circuit=qc)
     env.reset(seed=0)
-    assert env.front == []  # all gates already executable -> no SWAPs to decide
+    assert env.front == []  # 所有门一开始就可执行 -> 没有需要决策的 SWAP
 
 
 def test_policy_router_integrates_with_pass():
@@ -92,4 +92,4 @@ def test_reward_sign_swap_costs():
     mask = env.valid_action_mask()
     action = int(np.flatnonzero(mask)[0])
     _, reward, _, _, _ = env.step(action)
-    assert reward == -1.0  # pure swap cost when shaping is off
+    assert reward == -1.0  # 关掉 shaping 后,只剩纯 SWAP 成本

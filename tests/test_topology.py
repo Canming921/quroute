@@ -9,7 +9,7 @@ def test_linear():
 
 def test_ring_wraps():
     cm = ring_topology(4)
-    # in a ring of 4, 0 and 3 are adjacent
+    # 4 个比特的环里,0 和 3 相邻
     assert cm.distance(0, 3) == 1
 
 
@@ -22,7 +22,7 @@ def test_grid():
 def test_from_edges_symmetric():
     cm = from_edges([(0, 1), (1, 2)])
     assert cm.distance(0, 2) == 2
-    assert cm.distance(2, 0) == 2  # undirected
+    assert cm.distance(2, 0) == 2  # 无向
 
 
 def test_trivial_layout():

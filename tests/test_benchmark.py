@@ -23,8 +23,8 @@ def _max_arity(circuit):
 ])
 def test_generators_are_routable(gen):
     c = gen()
-    assert _max_arity(c) <= 2          # only 1- and 2-qubit gates
-    assert "swap" not in c.count_ops() # no SWAPs in input -> clean overhead accounting
+    assert _max_arity(c) <= 2          # 只含 1、2 比特门
+    assert "swap" not in c.count_ops() # 输入不含 SWAP -> 开销计账干净
 
 
 def test_default_suite_keys():
@@ -45,7 +45,7 @@ def test_benchmark_rows_valid_and_complete():
     routers = {"greedy": GreedyShortestPathRouter(), "sabre": SabreBaselineRouter(trials=2)}
     rows = benchmark(cm, suite, routers, n_qubits=6)
     assert len(rows) == len(suite) * len(routers)
-    assert all(r["valid"] for r in rows)              # every output is hardware-legal
+    assert all(r["valid"] for r in rows)              # 每个输出都硬件合法
     assert all(r["added_cx"] >= 0 for r in rows)
 
 
