@@ -1,4 +1,7 @@
-"""Benchmark plots (needs matplotlib; import lazily)."""
+"""Benchmark 绘图(需要 matplotlib;懒加载)。
+
+注:图中坐标轴标签 / 标题保留英文,以避免 matplotlib 缺少中文字体时出现乱码方块。
+"""
 from __future__ import annotations
 
 from .runner import aggregate
@@ -17,7 +20,7 @@ def _import_plt():
 
 
 def plot_added_cx_by_circuit(rows: list[dict], path: str, *, n_qubits: int | None = None):
-    """Grouped bar chart: added CX per circuit, one bar group per router."""
+    """分组柱状图:每个电路的新增 CX,每个路由器一组柱子。"""
     plt = _import_plt()
     agg = aggregate(rows)
     if n_qubits is not None:
@@ -48,7 +51,7 @@ def plot_added_cx_by_circuit(rows: list[dict], path: str, *, n_qubits: int | Non
 
 
 def plot_scaling(rows: list[dict], path: str, *, circuit: str = "random"):
-    """Line plot: added CX vs qubit count for one circuit family, per router."""
+    """折线图:某一类电路下,新增 CX 随比特数的变化(每个路由器一条线)。"""
     plt = _import_plt()
     agg = [a for a in aggregate(rows) if a["circuit"] == circuit]
     routers = sorted({a["router"] for a in agg})

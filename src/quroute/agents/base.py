@@ -1,8 +1,8 @@
-"""Router interface + result container.
+"""路由器接口 + 结果容器。
 
-Every routing strategy (the greedy baseline now, the RL+GNN agent later) implements
-the same `BaseRouter.route(...)` contract, so they are drop-in interchangeable inside
-the Qiskit `QurouteRouter` pass and the benchmark harness.
+每一种路由策略(现在的贪心基线、之后的 RL+GNN 智能体)都实现同一个
+`BaseRouter.route(...)` 契约,因此它们在 Qiskit `QurouteRouter` pass 和
+benchmark 框架里可以即插即换。
 """
 from __future__ import annotations
 
@@ -15,16 +15,16 @@ from qiskit.transpiler import CouplingMap
 
 @dataclass
 class RoutedResult:
-    """Output of a routing pass plus the metrics the rubric/benchmark cares about."""
+    """一次路由的输出,外加评分表 / benchmark 关心的各项指标。"""
 
     circuit: QuantumCircuit
     n_swaps: int
-    final_layout: dict[int, int]  # logical -> physical, after routing
+    final_layout: dict[int, int]  # 路由后的 逻辑->物理 映射
     extra: dict = field(default_factory=dict)
 
     @property
     def added_cx(self) -> int:
-        """Each inserted SWAP costs 3 CNOTs on a CX-native device."""
+        """在以 CX 为原生门的设备上,每插入一个 SWAP 相当于 3 个 CNOT。"""
         return 3 * self.n_swaps
 
     @property
@@ -33,7 +33,7 @@ class RoutedResult:
 
 
 class BaseRouter(ABC):
-    """Common interface for all routing strategies."""
+    """所有路由策略的统一接口。"""
 
     name: str = "base"
 
@@ -44,5 +44,5 @@ class BaseRouter(ABC):
         coupling_map: CouplingMap,
         initial_layout: dict[int, int] | None = None,
     ) -> RoutedResult:
-        """Return a hardware-valid circuit (every 2-qubit gate on a coupling edge)."""
+        """返回一个硬件合法的电路(每个两比特门都落在一条耦合边上)。"""
         raise NotImplementedError

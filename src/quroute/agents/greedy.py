@@ -1,13 +1,13 @@
-"""GreedyShortestPathRouter — the Stage-A baseline.
+"""GreedyShortestPathRouter —— Stage A 的基线路由器。
 
-Naive, deterministic, and *correct*: walk the circuit in a valid topological order;
-whenever a 2-qubit gate's qubits are not adjacent on the device, SWAP the first one
-step-by-step along a shortest path until the two are neighbours, then emit the gate.
+朴素、确定性、且*正确*:按合法的拓扑序遍历电路;每当某个两比特门的两个比特
+在设备上不相邻时,就沿最短路径把第一个比特逐步 SWAP 过去,直到两者相邻,再
+执行该门。
 
-This is intentionally simpler than SABRE (no look-ahead, no decay heuristic, no
-front-layer choice). It exists so the whole pipeline runs end-to-end from commit #1,
-and so the RL+GNN agent has an honest baseline to beat. The learned agent will keep
-this exact interface and replace only the *which-SWAP* decision.
+它刻意比 SABRE 更简单(没有 look-ahead、没有衰减启发式、不挑选 front layer)。
+它的存在是为了让整条流水线从第 1 个 commit 起就端到端可用,也让 RL+GNN 智能体
+有一个诚实的基线可以去超越。学习型智能体会沿用完全相同的接口,只替换“选哪个
+SWAP”这一决策。
 """
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ class GreedyShortestPathRouter(BaseRouter):
                 p1, p2 = log_to_phys[l1], log_to_phys[l2]
                 if coupling_map.distance(p1, p2) > 1:
                     path = coupling_map.shortest_undirected_path(p1, p2)
-                    # move the logical at p1 toward p2 until adjacent (len(path)-2 swaps)
+                    # 把 p1 上的逻辑比特沿路径挪向 p2,直到相邻(共 len(path)-2 次 SWAP)
                     for k in range(len(path) - 2):
                         apply_swap(path[k], path[k + 1])
                 out.append(op, [log_to_phys[l1], log_to_phys[l2]], clbits)

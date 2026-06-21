@@ -1,7 +1,7 @@
-"""Benchmark suite: standard circuits vs Qiskit SABRE, with reproducible metrics.
+"""Benchmark 套件:用可复现的指标,把标准电路与 Qiskit SABRE 做对比。
 
-Core (circuits + runner + metrics) depends on qiskit + numpy only, so it runs in CI.
-Plotting (`plots.py`) needs matplotlib and is imported lazily.
+核心部分(电路 + runner + 指标)只依赖 qiskit + numpy,因此能在 CI 中运行。
+绘图(`plots.py`)需要 matplotlib,采用懒加载。
 """
 from .circuits import (
     default_suite,

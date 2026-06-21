@@ -1,7 +1,7 @@
-"""Standard benchmark circuit generators.
+"""标准 benchmark 电路生成器。
 
-Every generator returns a circuit already decomposed to <=2-qubit gates with NO swap
-gates, so any SWAP in a routed output is purely routing overhead (clean accounting).
+每个生成器返回的电路都已分解为 ≤2 比特门、且不含 SWAP 门,因此路由输出里出现的
+任何 SWAP 都纯属路由开销(便于干净地计账)。
 """
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import numpy as np
 from qiskit import QuantumCircuit, transpile
 from qiskit.synthesis import synth_qft_full
 
-# basis with only 1- and 2-qubit gates and no SWAP
+# 只含 1、2 比特门、且不含 SWAP 的基门集合
 _BASIS = ["cx", "rz", "sx", "x", "h"]
 
 
@@ -30,8 +30,8 @@ def ghz_circuit(n: int) -> QuantumCircuit:
 
 
 def qaoa_maxcut_circuit(n: int, *, p: int = 1, seed=None) -> QuantumCircuit:
-    """QAOA MaxCut ansatz on a random graph (~1.5n edges). Routing depends on the
-    interaction (ZZ) structure, not the angles, so angles are arbitrary fixed values."""
+    """随机图(约 1.5n 条边)上的 QAOA MaxCut 拟设。路由只取决于交互(ZZ)结构,
+    与角度无关,所以角度取任意固定值即可。"""
     rng = np.random.default_rng(seed)
     edges = set()
     target = int(1.5 * n)

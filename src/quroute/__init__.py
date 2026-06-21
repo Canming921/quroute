@@ -1,13 +1,12 @@
-"""quroute — AI-driven qubit mapping & routing for restricted quantum topologies.
+"""quroute —— 面向受限拓扑量子芯片的 AI 驱动比特映射与路由。
 
-A Qiskit-compatible transpiler plugin that learns the connectivity constraints of
-a target physical topology and decides an initial qubit mapping + SWAP-insertion
-strategy that minimizes circuit depth and CNOT count.
+一个兼容 Qiskit 的转译器(transpiler)插件:学习目标物理拓扑的连通性约束,
+自动决定初始比特映射 + SWAP 插入策略,以最小化电路深度和 CNOT 门数量。
 
-Roadmap (see docs/physics and the README):
-    Stage A  : RL environment + simple-feature policy  (baseline: GreedyShortestPathRouter)
-    Stage B  : GNN topology encoder inside the RL policy (the differentiator)
-    Plan B   : imitation-learning fallback (imitate SABRE) if RL training is unstable
+路线图(详见 docs/physics 与 README):
+    Stage A  : 强化学习环境 + 简单特征策略(基线:GreedyShortestPathRouter)
+    Stage B  : 在 RL 策略中用 GNN 编码拓扑(核心差异化)
+    Plan B   : 训练不稳时退回模仿学习(模仿 SABRE)
 """
 
 from .agents.base import BaseRouter, RoutedResult

@@ -1,25 +1,24 @@
-"""RoutingEnv — the Stage-A reinforcement-learning environment.
+"""RoutingEnv —— Stage A 的强化学习环境。
 
-A gym-style MDP for qubit routing. It is a faithful little routing *simulator*:
-at every decision point the front layer contains only 2-qubit gates whose qubits are
-NOT yet adjacent on the device (1-qubit gates and already-adjacent gates are executed
-"for free"), so the agent's only job is to choose a SWAP.
+一个用于比特路由的 gym 式 MDP。它是一个忠实的小型路由*模拟器*:在每个决策点,
+front layer 里只剩下两比特门、且其两个比特在设备上还不相邻(单比特门和已相邻的
+门会被“免费”执行掉),所以智能体唯一要做的就是选一个 SWAP。
 
-Deliberately depends on numpy + qiskit only (no torch / gymnasium), so it runs in CI.
-A trained neural policy plugs in later via `agents.PolicyRouter` without touching this
-file — that is the whole point of the interface.
+它刻意只依赖 numpy + qiskit(不依赖 torch / gymnasium),因此能在 CI 中运行。训练好
+的神经网络策略之后通过 `agents.PolicyRouter` 接入,无需改动本文件——这正是该接口的
+意义所在。
 
 MDP
 ---
-state      : engineered feature vector (see `_observation`); Stage B will feed the raw
-             (coupling graph, interaction graph) to a GNN instead.
-action     : index into `self.edges` — the device edge to SWAP.
-mask       : `valid_action_mask()` — edges incident to a front-layer qubit (SABRE's
-             candidate set). Invalid actions are still physically legal but useless.
-reward     : swap_cost (default -1, so maximizing return == minimizing SWAPs)
-             + shaping * (front-layer distance reduction)   [potential-based]
-             + exec_bonus * (#gates executed this step).
-terminated : all gates routed.   truncated : step budget exhausted.
+状态       :工程化的特征向量(见 `_observation`);Stage B 会改成把原始的
+             (耦合图, 交互图)喂给 GNN。
+动作       :`self.edges` 的下标 —— 要做 SWAP 的那条设备边。
+掩码       :`valid_action_mask()` —— 与 front-layer 比特相邻的边(SABRE 的候选集)。
+             非法动作在物理上仍合法,但没有意义。
+奖励       :swap_cost(默认 -1,于是“最大化回报”==“最小化 SWAP 数”)
+             + shaping * (front-layer 距离的削减)   [势函数式整形]
+             + exec_bonus * (本步执行掉的门数)。
+terminated :所有门都已路由完。   truncated :步数预算耗尽。
 """
 from __future__ import annotations
 
@@ -57,7 +56,7 @@ class RoutingEnv:
         self.exec_bonus = exec_bonus
         self.n_phys = coupling_map.size()
 
-        # undirected, de-duplicated edge list -> the action space
+        # 无向、去重后的边列表 -> 动作空间
         edges = set()
         for a, b in coupling_map.get_edges():
             edges.add((a, b) if a < b else (b, a))
@@ -71,7 +70,7 @@ class RoutingEnv:
         self._build_graph_caches()
         self._reset_internal_state()
 
-    # ---- static graph caches (for the Stage-B GNN) ------------------------
+    # ---- 静态图缓存(供 Stage B 的 GNN 使用)------------------------------
     def _build_graph_caches(self) -> None:
         n = self.n_phys
         a = np.zeros((n, n), dtype=np.float64)
@@ -80,18 +79,18 @@ class RoutingEnv:
             a[v, u] = 1.0
         self._deg = a.sum(1)
         self._maxdeg = max(1.0, float(self._deg.max()))
-        # symmetric-normalized adjacency with self-loops: D^-1/2 (A+I) D^-1/2
+        # 带自环的对称归一化邻接:D^-1/2 (A+I) D^-1/2
         ah = a + np.eye(n)
         dinv = 1.0 / np.sqrt(ah.sum(1))
         self._norm_adj = (((ah * dinv).T) * dinv).astype(np.float32)
         self._maxdist = max(1, int(self._dist.max()))
 
     def node_features(self) -> np.ndarray:
-        """Per-physical-qubit features the GNN reads (topology-agnostic, fixed width=4).
+        """GNN 读取的每个物理比特的特征(与拓扑无关,固定宽度=4)。
 
-        [occupied, in_front_layer, distance_to_gate_partner (norm), degree (norm)].
-        Each occupied qubit has at most one front-layer gate (per-qubit dependency
-        chain), so its partner is well-defined.
+        [是否被占用, 是否在 front layer, 到配对比特的距离(归一化), 度数(归一化)]。
+        每个被占用的比特至多对应一个 front-layer 门(逐比特的依赖链),因此其配对
+        比特是唯一确定的。
         """
         n = self.n_phys
         feats = np.zeros((n, 4), dtype=np.float32)
@@ -111,7 +110,7 @@ class RoutingEnv:
             feats[p, 3] = self._deg[p] / self._maxdeg
         return feats
 
-    # ---- circuit -> gate dependency graph ---------------------------------
+    # ---- 电路 -> 门依赖图 -------------------------------------------------
     def _build_gate_graph(self, circuit: QuantumCircuit):
         gates = []
         preds = defaultdict(set)
@@ -161,7 +160,7 @@ class RoutingEnv:
         self.steps = 0
         self.n_executed = 0
 
-    # ---- core mechanics ---------------------------------------------------
+    # ---- 核心机制 ---------------------------------------------------------
     def _is_executable(self, gid: int) -> bool:
         g = self.gates[gid]
         if not g["is2q"]:
@@ -170,7 +169,7 @@ class RoutingEnv:
         return self._dist[p0, p1] == 1
 
     def _execute_free_gates(self) -> int:
-        """Greedily emit every currently-executable front-layer gate. Returns count."""
+        """贪心地执行掉当前所有可执行的 front-layer 门。返回执行掉的门数。"""
         executed = 0
         changed = True
         while changed:
@@ -209,12 +208,12 @@ class RoutingEnv:
                 total += int(self._dist[p0, p1])
         return total
 
-    # ---- gym-style API ----------------------------------------------------
+    # ---- gym 式接口 -------------------------------------------------------
     def reset(self, *, seed: int | None = None):
         if seed is not None:
             self.rng = np.random.default_rng(seed)
         self._reset_internal_state()
-        self._execute_free_gates()  # nothing to decide until we're stuck
+        self._execute_free_gates()  # 在卡住之前没有任何需要决策的事
         return self._observation(), self._info()
 
     def step(self, action: int):
@@ -236,9 +235,9 @@ class RoutingEnv:
         truncated = (not terminated) and self.steps >= self.max_steps
         return self._observation(), float(reward), terminated, truncated, self._info()
 
-    # ---- observation / mask ----------------------------------------------
+    # ---- 观测 / 掩码 ------------------------------------------------------
     def valid_action_mask(self) -> np.ndarray:
-        """Edges incident to a physical qubit holding a front-layer (2q) qubit."""
+        """与“持有 front-layer(两比特)逻辑比特的物理比特”相邻的那些边。"""
         hot = np.zeros(self.n_phys, dtype=bool)
         for gid in self.front:
             g = self.gates[gid]
@@ -246,24 +245,24 @@ class RoutingEnv:
                 for q in g["qubits"]:
                     hot[self.log_to_phys[q]] = True
         mask = np.array([hot[a] or hot[b] for a, b in self.edges], dtype=bool)
-        if not mask.any():  # safety: never hand back an all-False mask
+        if not mask.any():  # 安全兜底:绝不返回全 False 的掩码
             mask[:] = True
         return mask
 
     def _edge_distance_reduction(self) -> np.ndarray:
-        """Per-edge: how much would swapping it reduce the front-layer distance sum."""
+        """逐边:若对该边做 SWAP,front-layer 距离之和会减小多少。"""
         red = np.zeros(self.num_actions, dtype=float)
         base = self._front_distance_sum()
         for i, (a, b) in enumerate(self.edges):
             la, lb = self.phys_to_log[a], self.phys_to_log[b]
-            # simulate the swap cheaply on the layout
+            # 在映射上廉价地模拟一次该 SWAP
             self.phys_to_log[a], self.phys_to_log[b] = lb, la
             if la is not None:
                 self.log_to_phys[la] = b
             if lb is not None:
                 self.log_to_phys[lb] = a
             red[i] = base - self._front_distance_sum()
-            # undo
+            # 撤销
             self.phys_to_log[a], self.phys_to_log[b] = la, lb
             if la is not None:
                 self.log_to_phys[la] = a
@@ -300,7 +299,7 @@ class RoutingEnv:
             "n_swaps": self.n_swaps,
             "n_executed": self.n_executed,
             "front_size": len(self.front),
-            # graph state for the Stage-B GNN policy:
+            # 供 Stage B 的 GNN 策略使用的图状态:
             "node_features": self.node_features(),
             "adjacency": self._norm_adj,
             "action_edges": self.edges,

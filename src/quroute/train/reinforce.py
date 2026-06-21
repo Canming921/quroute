@@ -1,11 +1,10 @@
-"""Stage-A REINFORCE trainer: a masked-MLP policy over device edges.
+"""Stage A 的 REINFORCE 训练器:一个在设备边上做掩码的 MLP 策略。
 
-This is the minimal learning baseline that the GNN (Stage B) will later replace at the
-*encoder* level only. The policy maps the engineered observation to a distribution over
-SWAP edges, with invalid edges masked out. Trained with REINFORCE + a moving-average
-baseline for variance reduction.
+这是最简的学习基线;Stage B 的 GNN 之后只在*编码器*层面替换它。该策略把工程化的
+观测映射成 SWAP 边上的概率分布,并把非法边掩掉。用 REINFORCE + 滑动平均基线
+(降低方差)训练。
 
-Requires torch (`pip install -e ".[learn]"`).
+需要 torch(`pip install -e ".[learn]"`)。
 """
 from __future__ import annotations
 
@@ -39,12 +38,12 @@ def _masked_dist(logits: torch.Tensor, mask: np.ndarray) -> torch.distributions.
 
 
 class TorchMaskedPolicy:
-    """Inference wrapper: (obs, info) -> action. Plugs into PolicyRouter."""
+    """推理期包装器:(obs, info) -> action。可直接接入 PolicyRouter。"""
 
     def __init__(self, net: PolicyNet, greedy: bool = True):
         self.net = net
         self.greedy = greedy
-        self._last = None  # anti-livelock: don't immediately undo the previous SWAP
+        self._last = None  # 防死循环:不要立刻撤销上一步的 SWAP
 
     def reset(self) -> None:
         self._last = None
@@ -93,7 +92,7 @@ def train(
             obs, reward, terminated, truncated, info = env.step(int(action))
             rewards.append(reward)
 
-        if not log_probs:  # circuit needed no routing
+        if not log_probs:  # 该电路无需路由
             continue
         ep_return = float(sum(rewards))
         baseline = 0.95 * baseline + 0.05 * ep_return

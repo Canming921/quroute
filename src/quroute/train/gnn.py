@@ -1,16 +1,16 @@
-"""Stage-B: a Graph Neural Network policy over the device topology.
+"""Stage B:作用在设备拓扑上的图神经网络(GNN)策略。
 
-Why a GNN (and the whole point of Stage B):
-- The agent must "learn the constraint features of the target physical topology"
-  (course rubric). Message passing over the coupling graph does exactly that.
-- Unlike the Stage-A MLP — whose input width is tied to one device — this policy is
-  *size-agnostic*: the same shared GNN + edge-MLP weights run on ANY topology, so we can
-  train on one device and transfer to another with no retraining.
+为什么用 GNN(也是 Stage B 的全部意义):
+- 智能体必须“学习目标物理拓扑的约束特征”(课程评分表)。在耦合图上做消息传递
+  正好做到这一点。
+- 与 Stage A 的 MLP(输入宽度与某一台设备绑定)不同,本策略是*尺寸无关*的:同一套
+  共享的 GNN + 边-MLP 权重可在任意拓扑上运行,因此可以在一台设备上训练、再迁移到
+  另一台而无需重训。
 
-Implementation is a from-scratch GCN (dense symmetric-normalized propagation), so the
-only dependency is torch (no torch-geometric). GINEConv / GAT are drop-in upgrades.
+实现是从零写的 GCN(稠密的对称归一化传播),因此唯一依赖是 torch(不需要
+torch-geometric)。GINEConv / GAT 可作为即插即换的升级。
 
-Requires the learn extra:  pip install -e ".[learn]"
+需要 learn 可选依赖:  pip install -e ".[learn]"
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ NEG_INF = -1e9
 
 
 class GCNLayer(nn.Module):
-    """h' = Â · (h W).  Â is the symmetric-normalized adjacency with self-loops."""
+    """h' = Â · (h W)。Â 是带自环的对称归一化邻接。"""
 
     def __init__(self, d_in: int, d_out: int):
         super().__init__()
@@ -40,8 +40,8 @@ class GNNPolicyNet(nn.Module):
         super().__init__()
         dims = [in_feats] + [hidden] * layers
         self.gcns = nn.ModuleList(GCNLayer(dims[i], dims[i + 1]) for i in range(layers))
-        # edge score from the two endpoint embeddings (symmetric) + physical edge features
-        # (the per-edge front-layer distance reduction — the signal the greedy heuristic uses)
+        # 边的打分来自两端点嵌入(对称)+ 物理边特征
+        #(即每条边的 front-layer 距离削减——贪心启发式所用的同一个信号)
         self.edge_mlp = nn.Sequential(
             nn.Linear(hidden + edge_feats, hidden), nn.ReLU(), nn.Linear(hidden, 1)
         )
@@ -56,12 +56,12 @@ class GNNPolicyNet(nn.Module):
         h = self.node_embeddings(x, a_hat)
         idx = torch.as_tensor(edges, dtype=torch.long)  # [E, 2]
         ef = torch.as_tensor(edge_feats, dtype=torch.float32).reshape(len(edges), -1)
-        z = torch.cat([h[idx[:, 0]] + h[idx[:, 1]], ef], dim=-1)  # symmetric endpoints + edge feat
-        return self.edge_mlp(z).squeeze(-1)  # [E] logits over candidate SWAP edges
+        z = torch.cat([h[idx[:, 0]] + h[idx[:, 1]], ef], dim=-1)  # 对称端点 + 边特征
+        return self.edge_mlp(z).squeeze(-1)  # [E] 候选 SWAP 边上的 logits
 
 
 def _edge_reduction(obs: np.ndarray, n_nodes: int, n_edges: int) -> np.ndarray:
-    """Per-edge front-layer distance reduction, sliced from the observation tail."""
+    """从观测向量尾部切出的、每条边的 front-layer 距离削减量。"""
     return obs[2 * n_nodes : 2 * n_nodes + n_edges]
 
 
@@ -72,14 +72,13 @@ def _masked_dist(logits: torch.Tensor, mask: np.ndarray) -> torch.distributions.
 
 
 class GNNMaskedPolicy:
-    """Inference wrapper: (obs, info) -> action. Reads the graph state from `info`,
-    so it plugs into `PolicyRouter` / `run_episode` unchanged.
+    """推理期包装器:(obs, info) -> action。从 `info` 中读取图状态,因此可原样接入
+    `PolicyRouter` / `run_episode`。
 
-    Termination guarantee: if no gate has executed for `patience` steps, the policy
-    forces the max-distance-reduction SWAP (available in the observation tail), which
-    strictly decreases the front-layer distance and therefore makes provable progress.
-    Between those, a short tabu blocks trivial 2-cycles. This holds on any connected
-    topology, including low-connectivity ones (a line) the net was never trained on."""
+    收敛保证:若连续 `patience` 步没有门被执行,策略就强制走“最大距离削减”那一步
+    (该信息在观测尾部),它会严格减小 front-layer 距离,从而保证可证的进展。其余
+    时候用一个短 tabu 阻止平凡的二循环。这一性质在任何连通拓扑上都成立,包括网络
+    从未训练过的低连通度拓扑(如线形)。"""
 
     def __init__(self, net: GNNPolicyNet, greedy: bool = True, tabu: int = 4,
                  patience: int | None = None):
@@ -109,7 +108,7 @@ class GNNMaskedPolicy:
         n = info["adjacency"].shape[0]
         patience = self._patience if self._patience is not None else 2 * n
 
-        # stall detection (forces guaranteed progress)
+        # 停滞检测(强制保证进展)
         if info["n_executed"] > self._last_exec:
             self._stall = 0
             self._last_exec = info["n_executed"]
@@ -148,8 +147,8 @@ def train_gnn(
     seed: int = 0,
     log_every: int = 100,
 ) -> GNNPolicyNet:
-    """REINFORCE (+ entropy bonus) training. Pass a LIST of coupling maps to train
-    across topologies (the generalization story); a single map also works."""
+    """REINFORCE(+ 熵正则)训练。传入一个耦合图的*列表*即可跨拓扑训练
+    (泛化的卖点);传入单个图也可以。"""
     rng = np.random.default_rng(seed)
     cmaps = list(coupling_maps) if isinstance(coupling_maps, (list, tuple)) else [coupling_maps]
     net = GNNPolicyNet(in_feats=4, hidden=hidden, layers=layers)

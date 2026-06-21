@@ -1,8 +1,8 @@
-"""PolicyRouter — run the RoutingEnv under a policy and return a RoutedResult.
+"""PolicyRouter —— 在 RoutingEnv 上运行一个策略,并返回 RoutedResult。
 
-This closes the loop: ANY policy (scripted now, a trained RL+GNN net later) becomes a
-drop-in `BaseRouter` usable inside the `QurouteRouter` Qiskit pass. The Stage-B
-`LearnedRouter` is just `PolicyRouter` wrapping a trained policy.
+这一步闭环:任意策略(现在是脚本式的,以后是训练好的 RL+GNN 网络)都能变成一个
+可在 Qiskit `QurouteRouter` pass 中使用的、即插即用的 `BaseRouter`。Stage B 的
+`LearnedRouter` 本质上就是 `PolicyRouter` 包了一个训练好的策略。
 """
 from __future__ import annotations
 

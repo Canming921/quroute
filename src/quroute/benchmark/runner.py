@@ -1,4 +1,4 @@
-"""Benchmark runner + metrics. qiskit + numpy only (CI-safe)."""
+"""Benchmark 运行器 + 指标。只依赖 qiskit + numpy(CI 安全)。"""
 from __future__ import annotations
 
 import csv
@@ -15,7 +15,7 @@ _METRIC_BASIS = ["cx", "rz", "sx", "x", "h"]
 
 
 def circuit_metrics(circuit: QuantumCircuit) -> dict:
-    """Flatten SWAPs to CX, then measure on a common basis for fair comparison."""
+    """先把 SWAP 展开成 CX,再在统一基门集合上测量,以保证公平对比。"""
     flat = transpile(circuit, basis_gates=_METRIC_BASIS, optimization_level=0)
     return {
         "cx": flat.count_ops().get("cx", 0),
@@ -34,8 +34,8 @@ def _is_hw_valid(circuit: QuantumCircuit, coupling_map: CouplingMap) -> bool:
 
 
 class SabreBaselineRouter(BaseRouter):
-    """Qiskit SABRE routing (best of `trials` seeds), wrapped as a BaseRouter for a
-    fair, uniform comparison (routing only, from a trivial initial layout)."""
+    """Qiskit SABRE 路由(取 `trials` 个 seed 的最优),包装成 BaseRouter,
+    以便做公平、统一的对比(仅路由,从 trivial 初始布局出发)。"""
 
     name = "qiskit_sabre"
 
@@ -60,10 +60,10 @@ def benchmark(
     *,
     n_qubits: int | None = None,
 ) -> list[dict]:
-    """Route every circuit with every router; return one row of metrics per pair."""
+    """用每个路由器路由每个电路;每个(电路, 路由器)组合返回一行指标。"""
     rows: list[dict] = []
     for cname, circ in suite.items():
-        base = circuit_metrics(circ)  # un-routed reference
+        base = circuit_metrics(circ)  # 未路由前的参考值
         for rname, router in routers.items():
             t0 = time.perf_counter()
             res = router.route(circ, coupling_map)
@@ -85,7 +85,7 @@ def benchmark(
 
 
 def summarize(rows: list[dict]) -> str:
-    """Plain-text table: added CX and 2q-depth per (circuit, router)."""
+    """纯文本表格:每个(电路, 路由器)的新增 CX 与两比特门深度。"""
     header = f"{'circuit':10}{'router':22}{'added_cx':>9}{'2q_depth':>9}{'valid':>7}"
     lines = [header, "-" * len(header)]
     for r in sorted(rows, key=lambda x: (x["circuit"], x["router"])):
@@ -97,7 +97,7 @@ def summarize(rows: list[dict]) -> str:
 
 
 def aggregate(rows: list[dict]) -> list[dict]:
-    """Mean over repeated instances, keyed by (n_qubits, circuit, router)."""
+    """按 (n_qubits, 电路, 路由器) 分组,对多次实例取均值。"""
     buckets = defaultdict(list)
     for r in rows:
         buckets[(r["n_qubits"], r["circuit"], r["router"])].append(r)

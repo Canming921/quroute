@@ -1,4 +1,4 @@
-"""Random circuit sampler used as the training distribution."""
+"""用作训练分布的随机电路采样器。"""
 from __future__ import annotations
 
 import numpy as np
